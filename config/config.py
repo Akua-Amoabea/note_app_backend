@@ -3,8 +3,6 @@ from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
-
-
     DB_USER:str
     DB_PASSWORD:str
     DB_HOST: str = "localhost"
