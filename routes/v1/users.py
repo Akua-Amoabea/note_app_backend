@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from schemas.users import UserSchema, CurrentUserSchema, UserSchemaOut
 from config.database import get_db
 from sqlalchemy.orm import Session
@@ -11,7 +12,6 @@ user_router = APIRouter(
     tags=["users"]
 )
 
-
 @user_router.post("/create_user")
 async def create_user(user: UserSchema, db: Session = Depends(get_db)):
 
@@ -20,7 +20,7 @@ async def create_user(user: UserSchema, db: Session = Depends(get_db)):
 
     if existing_user:
         raise HTTPException(
-            status_code=400,
+            status_code=400,    
             detail="Email already exists"
         )
     
@@ -45,14 +45,14 @@ async def create_user(user: UserSchema, db: Session = Depends(get_db)):
 
 
 @user_router.post("/login")
-async def fetch_user(user : CurrentUserSchema, db: Session = Depends(get_db)):
-    email = user.email.lower()
+async def fetch_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    email = form_data.username.lower()
     current_user = db.query(User).filter(User.email == email).first()
     if not current_user:
         raise HTTPException(status_code=404, detail="Invalid Credentials")
     
     if not verify_password(
-        user.password,
+        form_data.password,
         current_user.password
 
     ):
