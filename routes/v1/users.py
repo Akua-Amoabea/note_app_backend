@@ -4,7 +4,7 @@ from schemas.users import UserSchema, CurrentUserSchema, UserSchemaOut
 from config.database import get_db
 from sqlalchemy.orm import Session
 from models.users import User
-from core.security import create_access_token, hash_password, verify_password
+from core.security import create_access_token, create_refresh_token, hash_password, verify_password, verify_refresh_token, verify_token
 
 
 user_router = APIRouter(
@@ -67,8 +67,37 @@ async def fetch_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Sessi
             "email": current_user.email
         }
     )
+
+
+    refresh_token = create_refresh_token(
+        data={
+            "sub": str(current_user.id),
+        }
+    )
     
     return {
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer"
     }
+
+@user_router.get("/refresh")
+async def fetch_token(refresh_token:str, db: Session = Depends(get_db)):
+    payload = verify_refresh_token(refresh_token)
+    user = db.query(User).filter(User.id == payload.get("sub")).first()
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+    access_token = create_access_token(
+        data={
+            "sub": str(user.id),
+            "email": user.email
+        }
+    )
+    return {
+        "access_token": access_token,
+        "type": "bearer"
+    }
+    
