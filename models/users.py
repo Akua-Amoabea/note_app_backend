@@ -1,5 +1,5 @@
 from config.database import Base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 
 class User(Base):
     __tablename__ = "users"
@@ -8,6 +8,7 @@ class User(Base):
     first_name =Column(String, nullable=False)
     last_name = Column(String, nullable=True)
     email = Column(String, unique=True, nullable=False)
-    password = Column(String, nullable=False)   
+    password = Column(String, nullable=False)  
+    is_email_verified = Column(Boolean, default=False) 
     
 
