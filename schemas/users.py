@@ -5,6 +5,7 @@ class UserSchema(BaseModel):
     last_name: str
     email: EmailStr
     password: str
+    
 
 class UserSchemaOut(BaseModel):
     first_name: str

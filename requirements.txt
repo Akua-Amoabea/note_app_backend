@@ -9,3 +9,4 @@ python-multipart
 pydantic-settings
 psycopg2-binary
 alembic
+redis
