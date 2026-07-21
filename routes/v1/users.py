@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from models.users import PendingUser, User
 from core.security import create_access_token, create_refresh_token, hash_password, verify_password, verify_refresh_token, verify_token
 from services.email_services import send_verification_email
-from services.otp_services import get_otp_code, save_otp_code, verify_otp_code
+from services.otp_services import get_otp_code, save_otp_code
 
 
 user_router = APIRouter(
@@ -20,7 +20,6 @@ user_router = APIRouter(
 async def create_user(user: UserSchema, db: Session = Depends(get_db)):
 
     email = user.email.strip().lower()
-    password = user.password.strip().lower()
 
     existing_user = db.query(User).filter(User.email == email).first()
 
@@ -37,7 +36,7 @@ async def create_user(user: UserSchema, db: Session = Depends(get_db)):
             detail="Verification Pending. Request for OTP code"
         )
     
-    user_password = hash_password(password=password)
+    user_password = hash_password(password=user.password)
 
     db_user = PendingUser(
         first_name=user.first_name,
@@ -77,7 +76,6 @@ async def fetch_user(
 ):
 
     email = form_data.username.strip().lower()
-    password = form_data.password.strip().lower()
 
     current_user = db.query(User).filter(
         User.email == email
@@ -93,7 +91,7 @@ async def fetch_user(
 
     # 3. Check password
     if not verify_password(
-        password,
+        form_data.password,
         current_user.password
     ):
         raise HTTPException(
@@ -129,8 +127,7 @@ async def fetch_user(
 @user_router.post("/reset_password")
 async def reset_password(email: str ,old_password: str, new_password: str ,db: Session = Depends(get_db)):
     trimmed_email = email.strip().lower()
-    trimmed_old_password = old_password.strip().lower()
-    trimmed_new_password = new_password.strip().lower()
+   
 
     existing_user = db.query(User).filter(User.email == trimmed_email).first()
 
@@ -138,12 +135,12 @@ async def reset_password(email: str ,old_password: str, new_password: str ,db: S
         raise HTTPException(status_code=400, detail="Invalid Credentials")
     
 
-    result = verify_password(trimmed_old_password, existing_user.password)
+    result = verify_password(old_password, existing_user.password)
 
     if not result:
        raise HTTPException(status_code=400, detail="Incorrect password")
 
-    change_password = hash_password(trimmed_new_password)
+    change_password = hash_password(new_password)
 
     existing_user.password = change_password
 
