@@ -9,7 +9,6 @@ from models.users import PendingUser, User
 from core.security import create_access_token, create_refresh_token, hash_password, verify_password, verify_refresh_token, verify_token
 from services.email_services import send_verification_email
 from services.otp_services import get_otp_code, save_otp_code, verify_otp_code
-from services.redis_services   import redis_client
 
 
 user_router = APIRouter(
@@ -20,9 +19,10 @@ user_router = APIRouter(
 @user_router.post("/create_user")
 async def create_user(user: UserSchema, db: Session = Depends(get_db)):
 
-    email = user.email.lower()
+    email = user.email.strip().lower()
+    password = user.password.strip().lower()
 
-    existing_user = db.query(User).filter(User.email == user.email).first()
+    existing_user = db.query(User).filter(User.email == email).first()
 
     if existing_user:
         raise HTTPException(
@@ -37,7 +37,7 @@ async def create_user(user: UserSchema, db: Session = Depends(get_db)):
             detail="Verification Pending. Request for OTP code"
         )
     
-    user_password = hash_password(user.password)
+    user_password = hash_password(password=password)
 
     db_user = PendingUser(
         first_name=user.first_name,
@@ -54,7 +54,7 @@ async def create_user(user: UserSchema, db: Session = Depends(get_db)):
 
     otp_code = get_otp_code()
 
-    save_otp_code(user_id=db_user.id, otp= otp_code)
+    save_otp_code(email=db_user.email, otp= otp_code)
 
     send_verification_email(
         email=db_user.email,
@@ -76,7 +76,8 @@ async def fetch_user(
     db: Session = Depends(get_db)
 ):
 
-    email = form_data.username.lower()
+    email = form_data.username.strip().lower()
+    password = form_data.password.strip().lower()
 
     current_user = db.query(User).filter(
         User.email == email
@@ -92,7 +93,7 @@ async def fetch_user(
 
     # 3. Check password
     if not verify_password(
-        form_data.password,
+        password,
         current_user.password
     ):
         raise HTTPException(
@@ -122,4 +123,36 @@ async def fetch_user(
         "refresh_token": refresh_token,
         "token_type": "bearer"
     }
+
+
+
+@user_router.post("/reset_password")
+async def reset_password(email: str ,old_password: str, new_password: str ,db: Session = Depends(get_db)):
+    trimmed_email = email.strip().lower()
+    trimmed_old_password = old_password.strip().lower()
+    trimmed_new_password = new_password.strip().lower()
+
+    existing_user = db.query(User).filter(User.email == trimmed_email).first()
+
+    if not existing_user:
+        raise HTTPException(status_code=400, detail="Invalid Credentials")
+    
+
+    result = verify_password(trimmed_old_password, existing_user.password)
+
+    if not result:
+       raise HTTPException(status_code=400, detail="Incorrect password")
+
+    change_password = hash_password(trimmed_new_password)
+
+    existing_user.password = change_password
+
+    db.commit()
+    db.refresh(existing_user)
+
+    return {
+        "message": "password changed successfully"
+    }
+
+
 
