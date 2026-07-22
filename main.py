@@ -1,12 +1,19 @@
-from typing import List
-from uuid import uuid4
-from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from routes.v1 import notes
-from config.database import engine, Base
 from routes.v1.users import user_router
 from routes.v1.auth import auth_router
+from services.apscheduler_services import run_scheduler
 
-app = FastAPI()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    run_scheduler()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(notes.router)

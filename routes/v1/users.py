@@ -2,7 +2,7 @@ from datetime import timedelta, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from schemas.users import UserSchema, CurrentUserSchema, UserSchemaOut
+from schemas.users import UserSchema
 from config.database import get_db
 from sqlalchemy.orm import Session
 from models.users import PendingUser, User
@@ -16,7 +16,7 @@ user_router = APIRouter(
     tags=["users"]
 )
 
-@user_router.post("/create_user")
+@user_router.post("/")
 async def create_user(user: UserSchema, db: Session = Depends(get_db)):
 
     email = user.email.strip().lower()
@@ -68,88 +68,4 @@ async def create_user(user: UserSchema, db: Session = Depends(get_db)):
         "last_name": db_user.last_name,
         "email": db_user.email
     }
-
-@user_router.post("/login")
-async def fetch_user(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
-
-    email = form_data.username.strip().lower()
-
-    current_user = db.query(User).filter(
-        User.email == email
-    ).first()
-
-
-    # 1. Check if user exists first
-    if not current_user:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid Credentials"
-        )
-
-    # 3. Check password
-    if not verify_password(
-        form_data.password,
-        current_user.password
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid Credentials"
-        )
-
-
-    # 4. Create tokens
-    access_token = create_access_token(
-        data={
-            "sub": str(current_user.id),
-            "email": current_user.email
-        }
-    )
-
-
-    refresh_token = create_refresh_token(
-        data={
-            "sub": str(current_user.id)
-        }
-    )
-
-
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer"
-    }
-
-
-
-@user_router.post("/reset_password")
-async def reset_password(email: str ,old_password: str, new_password: str ,db: Session = Depends(get_db)):
-    trimmed_email = email.strip().lower()
-   
-
-    existing_user = db.query(User).filter(User.email == trimmed_email).first()
-
-    if not existing_user:
-        raise HTTPException(status_code=400, detail="Invalid Credentials")
-    
-
-    result = verify_password(old_password, existing_user.password)
-
-    if not result:
-       raise HTTPException(status_code=400, detail="Incorrect password")
-
-    change_password = hash_password(new_password)
-
-    existing_user.password = change_password
-
-    db.commit()
-    db.refresh(existing_user)
-
-    return {
-        "message": "password changed successfully"
-    }
-
-
 
