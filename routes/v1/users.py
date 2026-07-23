@@ -1,22 +1,21 @@
 from datetime import timedelta, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
 from schemas.users import UserSchema
 from config.database import get_db
 from sqlalchemy.orm import Session
 from models.users import PendingUser, User
-from core.security import create_access_token, create_refresh_token, hash_password, verify_password, verify_refresh_token, verify_token
+from core.security import  hash_password
 from services.email_services import send_verification_email
 from services.otp_services import get_otp_code, save_otp_code
 
 
 user_router = APIRouter(
-    prefix="/users",
-    tags=["users"]
+    prefix="/v1/users",
+    tags=["Users"]
 )
 
-@user_router.post("/")
+@user_router.post("")
 async def create_user(user: UserSchema, db: Session = Depends(get_db)):
 
     email = user.email.strip().lower()
@@ -63,9 +62,6 @@ async def create_user(user: UserSchema, db: Session = Depends(get_db)):
     )
 
     return {
-        "id": db_user.id,
-        "first_name": db_user.first_name,
-        "last_name": db_user.last_name,
-        "email": db_user.email
+        "message": "Registered Successfully"
     }
 

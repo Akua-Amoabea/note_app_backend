@@ -13,7 +13,8 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, title="Note - API", version="0.1.0"
+)
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(notes.router)

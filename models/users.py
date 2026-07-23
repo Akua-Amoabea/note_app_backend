@@ -1,6 +1,5 @@
-from datetime import datetime, timedelta
 from config.database import Base
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, DateTime
 
 class User(Base):
     __tablename__ = "users"

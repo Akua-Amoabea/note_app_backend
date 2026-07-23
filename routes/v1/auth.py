@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from config.database import get_db
@@ -9,13 +8,10 @@ from services.email_services import send_verification_email
 from services.otp_services import get_otp_code, save_otp_code, verify_otp_code
 
 
-
 auth_router = APIRouter(
-    prefix="/auth",
-    tags=["authentication"]
+    prefix="/v1/auth",
+    tags=["Auth"]
 )
-
-
 
 @auth_router.post("/login")
 async def login_user(
@@ -65,7 +61,6 @@ async def login_user(
         }
     )
 
-
     refresh_token = create_refresh_token(
         data={
             "sub": str(current_user.id)
@@ -80,7 +75,7 @@ async def login_user(
     }
 
 
-@auth_router.post("/reset_password")
+@auth_router.post("/reset-password")
 async def reset_password(email: str ,old_password: str, new_password: str ,db: Session = Depends(get_db)):
     trimmed_email = email.strip().lower()
    
@@ -108,10 +103,8 @@ async def reset_password(email: str ,old_password: str, new_password: str ,db: S
     }
 
 
-
-
 @auth_router.get("/refresh")
-async def fetch_token(refresh_token:str, db: Session = Depends(get_db)):
+async def fetch_refresh_token(refresh_token:str, db: Session = Depends(get_db)):
     payload = verify_refresh_token(refresh_token)
     user = db.query(User).filter(User.id == payload.get("sub")).first()
     if not user:
@@ -131,7 +124,7 @@ async def fetch_token(refresh_token:str, db: Session = Depends(get_db)):
     }
     
 
-@auth_router.post('/verify_otp_code')
+@auth_router.post('/verify-otp')
 async def verify_otp(otp_code:str,email: str ,db: Session = Depends(get_db)):
     trimmed_email = email.strip()
 
@@ -205,7 +198,7 @@ async def verify_otp(otp_code:str,email: str ,db: Session = Depends(get_db)):
 
 
 
-@auth_router.post('/resend_otp_code')
+@auth_router.post('/resend-otp')
 async def resend_otp(email: str ,db: Session = Depends(get_db)):
 
     trimmed_email = email.strip()

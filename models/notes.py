@@ -1,6 +1,6 @@
 from config.database import Base
 from sqlalchemy import Column, Integer, String, ForeignKey
-from models.users import User
+
 
 class Note(Base):
     __tablename__ = "notes"

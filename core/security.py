@@ -92,20 +92,6 @@ def verify_refresh_token(token:str):
         
         )
     
-def  create_email_verification_token(data:dict):
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=2)
-
-    to_encode.update(
-        {
-            "exp": expire,
-            "type": "emil_verification"
-        }
-
-    )
-
-    return jwt.encode(to_encode,settings.SECRET_KEY, settings.ALGORITHM)
-
 
     
 
